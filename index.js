@@ -4,9 +4,7 @@ const port = 3000;
 const knex = require('knex')(require('./knexfile.js').test)
 
 
-
 app.use(express.json());
-
 
 app.get('/api/books', (req, res) => {
     knex('books')
