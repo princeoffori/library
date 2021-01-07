@@ -1,10 +1,20 @@
 const express = require('express');
 const app = express();
-const port = 3000;
-const knex = require('knex')(require('./knexfile.js').test)
+const port = process.env.PORT || 3000;
+const cors = require('cors');
+const enviroment = (process.env.NODE_ENV || process.env.ENVIROMENT || 'test').toLowerCase().trim();
+const knex = require('knex')(require('./knexfile.js')[enviroment]);
 
+if (enviroment!='test'){
+    knex.migrate.rollback().then(async () => {//Makes sure database is setup right
+        return knex.migrate.latest().then(()=>{
+            return knex.seed.run();
+        });
+    });
+}
 
 app.use(express.json());
+app.use(cors());
 
 app.get('/api/books', (req, res) => {
     knex('books')
@@ -63,6 +73,19 @@ app.get('/api/books/:bookId/checkout/:userId', (req, res) => {
                 message:
                     'What you are looking for is not here Homie'
         }));
+})
+
+app.patch('/api/books/:bookId/return', (req, res) => {
+    knex('books')
+        .update({checked_out: false})
+        .where('id', req.params.bookId)
+        .returning("*")
+        .then(data => res.status(200).send(data))
+        .catch(err =>
+            res.status(404).json({
+                message:
+                    'What you are looking for is not here Homie'
+            }))
 })
 
 //C - create (post)
